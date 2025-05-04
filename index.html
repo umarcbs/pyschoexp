@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ARDPEI Task</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: white;
+      margin: 0;
+      padding: 0;
+    }
+    #cardFrame {
+      display: flex;
+      justify-content: center;
+      margin-top: 50px;
+    }
+    .card {
+      width: 400px;
+      height: 600px;
+      border: 5px solid lightgray;
+      margin: 0 50px;
+      position: relative;
+    }
+    canvas, img {
+      width: 100%;
+      height: 100%;
+    }
+    #instruction {
+      font-size: 28px;
+      margin-top: 100px;
+    }
+    #buttonFrame {
+      display: none;
+      margin-top: 30px;
+    }
+    .resp-button {
+      font-size: 24px;
+      padding: 20px 100px;
+      margin: 0 50px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="instruction">Press SPACEBAR to begin the task.</div>
+
+  <div id="cardFrame">
+    <div class="card" id="leftCard"><canvas id="leftCanvas" width="400" height="600"></canvas></div>
+    <div class="card" id="rightCard"><canvas id="rightCanvas" width="400" height="600"></canvas></div>
+  </div>
+
+  <div id="buttonFrame">
+    <button class="resp-button" onclick="recordResponse('Horizontal')">Horizontal</button>
+    <button class="resp-button" onclick="recordResponse('Vertical')">Vertical</button>
+  </div>
+
+  <script>
+    const category1Images = [
+      "images/category1/Lena1.png", "images/category1/Lena1.png", "images/category1/Lena1.png"
+    ];
+    const category2Images = [
+      "images/category2/A.png", "images/category2/B.png", "images/category2/C.png"
+    ];
+
+    let iteration = 0;
+    let actualLine = "";
+    let anchorSide = "";
+    let reactionStart = 0;
+    let data = [];
+
+    const instruction = document.getElementById("instruction");
+    const leftCanvas = document.getElementById("leftCanvas");
+    const rightCanvas = document.getElementById("rightCanvas");
+    const leftCtx = leftCanvas.getContext("2d");
+    const rightCtx = rightCanvas.getContext("2d");
+    const buttonFrame = document.getElementById("buttonFrame");
+
+    function clearCards() {
+      leftCtx.clearRect(0, 0, 400, 600);
+      rightCtx.clearRect(0, 0, 400, 600);
+    }
+
+    function drawLine(ctx, orientation) {
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      if (orientation === "Horizontal") {
+        ctx.moveTo(150, 290);
+        ctx.lineTo(250, 290);
+      } else {
+        ctx.moveTo(200, 250);
+        ctx.lineTo(200, 350);
+      }
+      ctx.stroke();
+    }
+
+    function showEmptyAnchorBox() {
+      clearCards();
+      anchorSide = Math.random() < 0.5 ? "left" : "right";
+      const ctx = anchorSide === "left" ? leftCtx : rightCtx;
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 5;
+      ctx.strokeRect(150, 250, 100, 100);
+      setTimeout(showLineInAnchor, 1000);
+    }
+
+    function showLineInAnchor() {
+      actualLine = Math.random() < 0.5 ? "Horizontal" : "Vertical";
+      const ctx = anchorSide === "left" ? leftCtx : rightCtx;
+      drawLine(ctx, actualLine);
+      setTimeout(showImages, 150);
+    }
+
+    function showImages() {
+      const img1 = new Image();
+      const img2 = new Image();
+      const img1Path = category1Images[Math.floor(Math.random() * category1Images.length)];
+      const img2Path = category2Images[Math.floor(Math.random() * category2Images.length)];
+
+      img1.onload = () => leftCtx.drawImage(img1, 0, 0, 400, 600);
+      img2.onload = () => rightCtx.drawImage(img2, 0, 0, 400, 600);
+      img1.src = img1Path;
+      img2.src = img2Path;
+
+      setTimeout(showResponseScreen, 500);
+    }
+
+    function showResponseScreen() {
+      clearCards();
+      buttonFrame.style.display = "block";
+      const testLine = Math.random() < 0.5 ? "Horizontal" : "Vertical";
+      const testSide = Math.random() < 0.5 ? "left" : "right";
+      const ctx = testSide === "left" ? leftCtx : rightCtx;
+      drawLine(ctx, testLine);
+      reactionStart = performance.now();
+    }
+
+    function recordResponse(selection) {
+      const reactionTime = ((performance.now() - reactionStart) / 1000).toFixed(3);
+      const correct = selection === actualLine ? 1 : 0;
+      data.push([iteration + 1, actualLine, selection, correct, reactionTime]);
+      iteration++;
+
+      buttonFrame.style.display = "none";
+
+      if (iteration >= 5) {
+        alert("Experiment completed!");
+        downloadCSV();
+      } else {
+        setTimeout(showEmptyAnchorBox, 500);
+      }
+    }
+
+    function downloadCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Iteration,Actual Line,Selected Line,Correct,Reaction Time\n";
+      data.forEach(row => {
+        csvContent += row.join(",") + "\n";
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `ardpei_task_${new Date().toISOString().replace(/[:.]/g, "_")}.csv`);
+      document.body.appendChild(link);
+      link.click();
+    }
+
+    document.body.addEventListener("keydown", function (e) {
+      if (e.code === "Space" && instruction.style.display !== "none") {
+        instruction.style.display = "none";
+        showEmptyAnchorBox();
+      }
+    });
+  </script>
+</body>
+</html>
