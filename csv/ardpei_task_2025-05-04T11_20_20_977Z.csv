@@ -1,0 +1,6 @@
+Iteration,Actual Line,Selected Line,Correct,Reaction Time
+1,Vertical,Horizontal,0,0.855
+2,Vertical,Vertical,1,0.958
+3,Horizontal,Horizontal,1,1.082
+4,Vertical,Vertical,1,1.710
+5,Vertical,Vertical,1,0.460
